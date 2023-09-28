@@ -17,6 +17,7 @@ int main(int argc, char** argv){
     MPI_Comm_size(MPI_COMM_WORLD, &size);
     MPI_Comm_rank(MPI_COMM_WORLD, &rank);
     int* distancias = (int*)malloc(sizeof(int)*size);
+		int* distanciasSend = (int*)malloc(sizeof(int)*size);
     //Se inicializa las distancias
     for(int i = 0; i < size; i++)
     {
@@ -39,7 +40,7 @@ int main(int argc, char** argv){
             //No estoy segura de que sea así
             int random = rand()%1000+1;
             MPI_Send(&random, 1, MPI_INT, i, TAG_DISTANCE, MPI_COMM_WORLD);
-			MPI_Recv(&distancias[i], 1, MPI_INT, i, TAG_DISTANCE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+						MPI_Recv(&distancias[i], 1, MPI_INT, i, TAG_DISTANCE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
         }
     }
     //Se obtiene el vértice s tal que no existe otro vértice w tal que D[w] < D[s]
@@ -51,6 +52,10 @@ int main(int argc, char** argv){
             minimo = i;
         }
     }
+
+		for (int i = 0; i < size; i++) {
+			printf("process %d: retraso en %d: %d\n",rank,i, distancias[i]);
+		}
     MPI_Finalize();
 	return 0;
 }
