@@ -37,7 +37,6 @@ int main(int argc, char** argv){
     {
         if(i != rank)
         {
-            //No estoy segura de que sea así
             int random = rand()%1000+1;
             MPI_Send(&random, 1, MPI_INT, i, TAG_DISTANCE, MPI_COMM_WORLD);
 						MPI_Recv(&distancias[i], 1, MPI_INT, i, TAG_DISTANCE, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
