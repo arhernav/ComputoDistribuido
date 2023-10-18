@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <mpi.h>
 #include <time.h>
+#include <stdbool.h>
 #define TAG_REPORT 1
 
 //Semilla distinta para cada uno de los nodos
@@ -30,10 +31,11 @@ int main(int argc, char** argv){
     inicializa1(rank);
     int reportes [rank];
     int ataca = rand()%2;
-    reportes[rank] = ataca;
     for(int i = 0; i < maxRondas; i++)
     {
-        inicializa1(rank);
+        int acuerdo [rank];
+        bool terminar = false;
+        reportes[rank] = ataca;
         //Se envia a los otros nodos la desición de si se ataca o retira
         for (int j = 0; j < size; j++)
         {
@@ -49,7 +51,10 @@ int main(int argc, char** argv){
         //Recive las desiciones de los demás nodos
         for(int j = 0 ; j < size; j++)
         {
-            MPI_Recv(&reportes[j], 1, MPI_INT, j, TAG_REPORT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            if(j != rank)
+            {
+                MPI_Recv(&reportes[j], 1, MPI_INT, j, TAG_REPORT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            }
         }
         int numVotosRetirada = 0;
         //Se cuentan los votos
@@ -62,6 +67,38 @@ int main(int argc, char** argv){
         }
         //Caso cuando se llega a un acuerdo
         if(numVotosRetirada >= minVotos || (size - numVotosRetirada) >= minVotos)
+        {
+            acuerdo[rank] = 1;
+        }
+        //Se envia a los otros nodos si llego a un acuerdo
+        for (int j = 0; j < size; j++)
+        {
+            if(j != rank)
+            {
+                MPI_Send(&acuerdo[rank], 1, MPI_INT, j, TAG_REPORT, MPI_COMM_WORLD);
+            }
+        }
+        //Recive si llegaron a un acuerdo los demás nodos
+        for(int j = 0 ; j < size; j++)
+        {
+            if(j != rank)
+            {
+                MPI_Recv(&acuerdo[j], 1, MPI_INT, j, TAG_REPORT, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+            }
+        }
+        //Caso en el que todos llegaron a un acuerdo
+        for(int j = 1; j < size; j++)
+        {
+            if(acuerdo[j-1] != acuerdo[j])
+            {
+                break;
+            }
+            if(j == size-1)
+            {
+                terminar = true;
+            }
+        }
+        if(terminar)
         {
             break;
         }
@@ -89,17 +126,22 @@ int main(int argc, char** argv){
     }
     if(ataca == 0)
     {
-        printf("Retirada");
+        if(rank < numTraidores)
+        {
+            printf("Nodo %d era traidor y eligio Retirada\n",rank);
+        }else
+        {
+            printf("Nodo %d era leal y eligio Retirada\n",rank);
+        }
     }else
     {
-        printf("Atacar");
-    }
-    if(rank < numTraidores)
-    {
-        printf("Traidor");
-    }else
-    {
-        printf("Leal");
+        if(rank < numTraidores)
+        {
+            printf("Nodo %d era traidor y eligio Atacar\n",rank);
+        }else
+        {
+            printf("Nodo %d era leal y eligio Atacar\n",rank);
+        }
     }
     MPI_Finalize();
     return 0;
